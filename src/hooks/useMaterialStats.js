@@ -1,25 +1,25 @@
 
-import { useEffect, useState } from "react";
-import { getMaterialStats } from "../utils/materialTracker";
+import { useCallback, useEffect, useState } from "react";
+import { getMaterials, getMaterialStats } from "../utils/materialTracker";
 
 export default function useMaterialStats() {
+  const [materials, setMaterials] = useState(() => getMaterials());
   const [stats, setStats] = useState(() => getMaterialStats());
 
-  useEffect(() => {
-    const refresh = () => {
-      setStats(getMaterialStats());
-    };
+  const refresh = useCallback(() => {
+    setMaterials(getMaterials());
+    setStats(getMaterialStats());
+  }, []);
 
+  useEffect(() => {
     window.addEventListener("materialsUpdated", refresh);
     window.addEventListener("storage", refresh);
-
-    refresh();
 
     return () => {
       window.removeEventListener("materialsUpdated", refresh);
       window.removeEventListener("storage", refresh);
     };
-  }, []);
+  }, [refresh]);
 
-  return stats;
+  return { materials, stats, refresh };
 }

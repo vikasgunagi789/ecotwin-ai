@@ -33,10 +33,19 @@ function saveMaterials(materials) {
   }
 }
 
+function normalizeStatus(status) {
+  return String(status || "Pending").trim().toLowerCase();
+}
+
 function isCompleted(status) {
   return ["reused", "recycled", "composted"].includes(
-    String(status || "").trim().toLowerCase()
+    normalizeStatus(status)
   );
+}
+
+function normalizeWeight(weightKg) {
+  const weight = Number(weightKg);
+  return Number.isFinite(weight) ? Math.max(0, weight) : 0;
 }
 
 export function getMaterials() {
@@ -51,11 +60,11 @@ export function addMaterial(material = {}) {
     id:
       globalThis.crypto?.randomUUID?.() ??
       `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    name: material.name || "Unknown material",
+    name: material.name || material.item || "Unknown material",
     category: material.category || "recyclable",
     recommendation: material.recommendation || "",
     status: material.status || "Pending",
-    weightKg: Math.max(0, Number(material.weightKg) || 0),
+    weightKg: normalizeWeight(material.weightKg),
     createdAt: new Date().toISOString(),
   };
 
@@ -65,20 +74,28 @@ export function addMaterial(material = {}) {
 
 export function updateMaterial(id, updates = {}) {
   const materials = readMaterials();
-  const exists = materials.some(
+
+  const index = materials.findIndex(
     (item) => String(item.id) === String(id)
   );
 
-  if (!exists) return null;
+  if (index === -1) return null;
 
-  const updated = materials.map((item) =>
-    String(item.id) === String(id)
-      ? { ...item, ...updates, id: item.id }
-      : item
-  );
+  const updated = materials.map((item, itemIndex) => {
+    if (itemIndex !== index) return item;
+
+    const next = { ...item, ...updates, id: item.id };
+
+    if ("weightKg" in updates) {
+      next.weightKg = normalizeWeight(updates.weightKg);
+    }
+
+    return next;
+  });
 
   saveMaterials(updated);
-  return updated.find((item) => String(item.id) === String(id)) ?? null;
+
+  return updated[index];
 }
 
 export function updateMaterialStatus(id, status) {
@@ -87,6 +104,7 @@ export function updateMaterialStatus(id, status) {
 
 export function deleteMaterial(id) {
   const materials = readMaterials();
+
   const updated = materials.filter(
     (item) => String(item.id) !== String(id)
   );
@@ -102,33 +120,29 @@ export function getMaterialStats() {
   const materials = readMaterials();
 
   const total = materials.length;
+
   const pending = materials.filter(
-    (item) =>
-      String(item.status || "Pending").trim().toLowerCase() === "pending"
+    (item) => normalizeStatus(item.status) === "pending"
   ).length;
 
   const recycled = materials.filter(
-    (item) =>
-      String(item.status || "").trim().toLowerCase() === "recycled"
+    (item) => normalizeStatus(item.status) === "recycled"
   ).length;
 
   const reused = materials.filter(
-    (item) =>
-      String(item.status || "").trim().toLowerCase() === "reused"
+    (item) => normalizeStatus(item.status) === "reused"
   ).length;
 
   const composted = materials.filter(
-    (item) =>
-      String(item.status || "").trim().toLowerCase() === "composted"
+    (item) => normalizeStatus(item.status) === "composted"
   ).length;
 
   const processing = materials.filter(
-    (item) =>
-      String(item.status || "").trim().toLowerCase() === "processing"
+    (item) => normalizeStatus(item.status) === "processing"
   ).length;
 
   const totalWeight = materials.reduce(
-    (sum, item) => sum + Math.max(0, Number(item.weightKg) || 0),
+    (sum, item) => sum + normalizeWeight(item.weightKg),
     0
   );
 
@@ -155,12 +169,11 @@ export function getImpactSummary() {
   ).length;
 
   const pending = materials.filter(
-    (item) =>
-      String(item.status || "Pending").trim().toLowerCase() === "pending"
+    (item) => normalizeStatus(item.status) === "pending"
   ).length;
 
   const trackedWeightKg = materials.reduce(
-    (sum, item) => sum + Math.max(0, Number(item.weightKg) || 0),
+    (sum, item) => sum + normalizeWeight(item.weightKg),
     0
   );
 

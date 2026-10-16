@@ -45,6 +45,8 @@ import ImpactRewards from "./ImpactRewards.jsx";
 import DigitalTwin from "./DigitalTwin.jsx";
 import EcoCoach from "./EcoCoach.jsx";
 import CollectionCenters from "./CollectionCenters.jsx";
+import ReportsAnalytics from "./ReportsAnalytics.jsx";
+import WorkspaceSettings from "./WorkspaceSettings.jsx";
 
 
 const navigation = [
@@ -57,15 +59,15 @@ const navigation = [
 ];
 
 
-const sampleWeeklyData = [
-  { day: "Mon", recycled: 42, reused: 18, organic: 25 },
-  { day: "Tue", recycled: 55, reused: 26, organic: 32 },
-  { day: "Wed", recycled: 48, reused: 31, organic: 27 },
-  { day: "Thu", recycled: 70, reused: 38, organic: 44 },
-  { day: "Fri", recycled: 63, reused: 43, organic: 39 },
-  { day: "Sat", recycled: 82, reused: 51, organic: 48 },
-  { day: "Sun", recycled: 76, reused: 58, organic: 55 },
-];
+// const sampleWeeklyData = [
+//   { day: "Mon", recycled: 42, reused: 18, organic: 25 },
+//   { day: "Tue", recycled: 55, reused: 26, organic: 32 },
+//   { day: "Wed", recycled: 48, reused: 31, organic: 27 },
+//   { day: "Thu", recycled: 70, reused: 38, organic: 44 },
+//   { day: "Fri", recycled: 63, reused: 43, organic: 39 },
+//   { day: "Sat", recycled: 82, reused: 51, organic: 48 },
+//   { day: "Sun", recycled: 76, reused: 58, organic: 55 },
+// ];
 
 function ScanIcon(props) {
   return <Target {...props} />;
@@ -1020,6 +1022,26 @@ export default function App() {
 
 ) : active === "Impact & Rewards" ? (
   <ImpactRewards />
+
+  ) : active === "Reports & Analytics" ? (
+  <ReportsAnalytics
+    materials={materials}
+    onBack={() => setActive("Overview")}
+  />
+) : active === "Settings" ? (
+  <WorkspaceSettings
+    onClearHistory={() => {
+      if (
+        window.confirm(
+          "Delete all saved material records? This cannot be undone."
+        )
+      ) {
+        localStorage.removeItem("ecotwin_materials");
+        window.dispatchEvent(new Event("materialsUpdated"));
+        setMaterials(getMaterials());
+      }
+    }}
+  />
 
   ) : active === "Collection Centers" ? (
   <CollectionCenters />
